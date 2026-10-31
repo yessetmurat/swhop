@@ -1,0 +1,65 @@
+name: Release
+
+# Push a tag like v0.1.0 to build, publish a GitHub release with the
+# prebuilt binary, and bump the Homebrew formula in yessetmurat/homebrew-tap.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  TAP_REPO: yessetmurat/homebrew-tap
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: swift build -c release
+
+      - name: Package and sign
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          TARBALL="swhop-${GITHUB_REF_NAME}.tar.gz"
+          mkdir -p dist/swhop/bin
+          cp .build/release/swhop dist/swhop/bin/swhop
+          codesign --force --sign - dist/swhop/bin/swhop
+          tar -C dist -czf "$TARBALL" swhop
+          SHA="$(shasum -a 256 "$TARBALL" | cut -d' ' -f1)"
+          {
+            echo "VERSION=$VERSION"
+            echo "TARBALL=$TARBALL"
+            echo "SHA=$SHA"
+          } >> "$GITHUB_ENV"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$TARBALL" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --notes "swhop $VERSION"
+
+      - name: Bump Homebrew formula
+        env:
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${TARBALL}"
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${TAP_REPO}.git" tap
+          cd tap
+          sed -i '' -E \
+            -e "s|^  url .*|  url \"${URL}\"|" \
+            -e "s|^  version .*|  version \"${VERSION}\"|" \
+            -e "s|^  sha256 .*|  sha256 \"${SHA}\"|" \
+            Formula/swhop.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/swhop.rb
+          git commit -m "swhop ${VERSION}"
+          git push
