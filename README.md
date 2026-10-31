@@ -20,7 +20,9 @@ No dependencies: Swift Package Manager, Foundation/AppKit/Carbon only.
 
 The hotkey is cmd+space; type a query, Enter opens the selected app or
 copies the result, Esc closes and refocuses the previous app, arrows or
-ctrl+j/k move the selection.
+ctrl+j/k move the selection. cmd+v appends the clipboard text to the
+query (newlines and tabs become spaces, cut to 256 characters), and
+cmd+delete clears the query.
 
 The calculator supports `+ - * /`, parentheses, decimals (`.` or `,`), an
 optional leading minus, and Alfred-style percent: `200 + 10%` is 220. A
@@ -127,3 +129,7 @@ then the name (case-insensitive). Launch counts are kept in
 
 Runs the asserts over the pure logic (calc, fuzzy scoring, ranking,
 source parsing, the agent's plist) and prints `ok` on success.
+
+## License
+
+MIT, see `LICENSE`.
