@@ -20,6 +20,7 @@ enum SelfCheck {
         calc()
         apps()
         plistChecks()
+        theme()
         if failures.isEmpty {
             print("ok")
             exit(0)
@@ -150,6 +151,87 @@ enum SelfCheck {
         })
         // Case-insensitive order: a byte sort would put iMovie after Zed.
         check("scan case-insensitive order", { names[2] == "iMovie" })
+    }
+
+    // MARK: Theme
+
+    private static func theme() {
+        let d = Theme()
+        check("theme defaults are Megan", {
+            d.window == 0x2D2D2DFF && d.field == 0x00000026 && d.selection == 0x3E3E3E7F
+                && d.text == 0xFFFFFFFF && d.rowText == 0xFFFFFFE5
+                && d.windowRadius == 12 && d.radius == 8 && d.font == "IBMPlexSans"
+                && d.fieldFontSize == 16 && d.rowFontSize == 12 && d.width == 480
+        })
+        check("parse empty -> defaults", {
+            let r = Theme.parse("")
+            return r.theme == d && r.errors.isEmpty
+        })
+        check("parse all keys", {
+            let r = Theme.parse(
+                """
+                # light
+                window = FFFFFFFF
+                field = 0000000F
+                selection = DDDDDD
+                text = 000000FF
+                row_text = 333333CC
+                window_radius = 0
+                radius = 4.5
+                font = Menlo
+                field_font_size = 20
+                row_font_size = 14
+                width = 600
+                """)
+            var w = Theme()
+            w.window = 0xFFFFFFFF; w.field = 0x0000000F; w.selection = 0xDDDDDDFF
+            w.text = 0x000000FF; w.rowText = 0x333333CC
+            w.windowRadius = 0; w.radius = 4.5; w.font = "Menlo"
+            w.fieldFontSize = 20; w.rowFontSize = 14; w.width = 600
+            return r.theme == w && r.errors.isEmpty
+        })
+        check("parse crlf and spacing", {
+            let r = Theme.parse("  window\t=  #102030 \r\n\r\n  # c\r\nwidth=500\r\n")
+            var w = Theme()
+            w.window = 0x102030FF; w.width = 500
+            return r.theme == w && r.errors.isEmpty
+        })
+        check("parse last key wins", {
+            Theme.parse("width = 500\nwidth = 520").theme.width == 520
+        })
+        check("parse errors", {
+            let r = Theme.parse(
+                """
+                window
+                colour = FFFFFF
+                window = 12345
+                window = GGGGGG
+                field = +2D2D2DF
+                width = -1
+                width = inf
+                radius = abc
+                window_radius = -2
+                font =
+                row_font_size = 0
+                """)
+            return r.theme == d && r.errors == [
+                "line 1: expected key = value",
+                "line 2: unknown key colour",
+                "line 3: bad value for window",
+                "line 4: bad value for window",
+                "line 5: bad value for field",
+                "line 6: bad value for width",
+                "line 7: bad value for width",
+                "line 8: bad value for radius",
+                "line 9: bad value for window_radius",
+                "line 10: bad value for font",
+                "line 11: bad value for row_font_size",
+            ]
+        })
+        check("parse partial", {
+            let r = Theme.parse("width = 600\nwidth = wide\nradius = 2")
+            return r.theme.width == 600 && r.theme.radius == 2 && r.errors == ["line 2: bad value for width"]
+        })
     }
 
     // MARK: Calculator

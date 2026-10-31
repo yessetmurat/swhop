@@ -151,7 +151,7 @@ enum Apps {
 
     // MARK: - Helpers
 
-    private static func homeDir() -> String {
+    static func homeDir() -> String {
         ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()
     }
 
