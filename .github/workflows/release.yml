@@ -27,6 +27,7 @@ jobs:
           TARBALL="swhop-${GITHUB_REF_NAME}.tar.gz"
           mkdir -p dist/swhop/bin
           cp .build/release/swhop dist/swhop/bin/swhop
+          cp LICENSE dist/swhop/LICENSE
           codesign --force --sign - dist/swhop/bin/swhop
           tar -C dist -czf "$TARBALL" swhop
           SHA="$(shasum -a 256 "$TARBALL" | cut -d' ' -f1)"
