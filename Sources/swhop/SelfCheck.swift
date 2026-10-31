@@ -21,6 +21,7 @@ enum SelfCheck {
         apps()
         plistChecks()
         theme()
+        paste()
         if failures.isEmpty {
             print("ok")
             exit(0)
@@ -232,6 +233,17 @@ enum SelfCheck {
             let r = Theme.parse("width = 600\nwidth = wide\nradius = 2")
             return r.theme.width == 600 && r.theme.radius == 2 && r.errors == ["line 2: bad value for width"]
         })
+    }
+
+    // MARK: Paste
+
+    private static func paste() {
+        check("paste trims ends", { pasteText("  1299*12\n") == "1299*12" })
+        check("paste newlines and tabs -> space", { pasteText("a\nb\tc\r\nd") == "a b c d" })
+        check("paste drops control chars", { pasteText("\u{7}sa\u{1B}fari") == "safari" })
+        check("paste keeps inner spaces", { pasteText("Visual Studio Code") == "Visual Studio Code" })
+        check("paste empty", { pasteText("") == "" && pasteText(" \n\t ") == "" })
+        check("paste cut to 256", { pasteText(String(repeating: "a", count: 300)).count == 256 })
     }
 
     // MARK: Calculator
