@@ -1,11 +1,11 @@
 // The panel: built once and toggled by the hotkey. Typing filters apps
 // (Enter opens one) or evaluates arithmetic (Enter copies it). The look
-// is the Alfred theme "Megan".
+// defaults to the Alfred theme "Megan" and can be changed in
+// `~/.config/swhop/theme`.
 
 import AppKit
 import Carbon
 
-let WIDTH: CGFloat = 480.0
 let PAD: CGFloat = 10.0
 let FIELD_PAD_X: CGFloat = 8.0
 let FIELD_PAD_Y: CGFloat = 12.0
@@ -51,8 +51,18 @@ final class PanelState {
 let state = PanelState()
 var ui: (panel: SwhopPanel, view: SwhopView)?
 
-let fieldFont = panelFont(["IBMPlexSans", "IBMPlexSans-Regular"], 16.0)
-let rowFont = panelFont(["IBMPlexSans", "IBMPlexSans-Regular"], 12.0)
+var theme = Theme()
+var fieldFont = panelFont(["IBMPlexSans", "IBMPlexSans-Regular"], 16.0)
+var rowFont = panelFont(["IBMPlexSans", "IBMPlexSans-Regular"], 12.0)
+
+/// The colors, fonts and width from the theme file; the fonts are rebuilt
+/// and the quit mark dropped so it is redrawn in the new text color.
+func applyTheme(_ t: Theme) {
+    theme = t
+    fieldFont = panelFont([t.font, t.font + "-Regular"], t.fieldFontSize)
+    rowFont = panelFont([t.font, t.font + "-Regular"], t.rowFontSize)
+    state.icons[QUIT_ICON_KEY] = nil
+}
 
 /// A borderless panel that takes keys without activating swhop, so the
 /// previous app stays frontmost.
@@ -106,6 +116,7 @@ enum Panel {
         let app = NSApplication.shared
         // No Dock icon, no menu bar of its own.
         app.setActivationPolicy(.accessory)
+        applyTheme(Theme.load())
         build()
         // Icons cost a few ms each the first time: load them now, not while
         // the user types. Apps installed later get theirs when first shown.
@@ -133,7 +144,7 @@ func toggle() {
 func build() {
     // Always tall enough for every row, transparent below the ones shown:
     // resizing while typing makes the window jump.
-    let frame = NSRect(x: 0, y: 0, width: WIDTH, height: height(items: ROWS))
+    let frame = NSRect(x: 0, y: 0, width: theme.width, height: height(items: ROWS))
     let panel = SwhopPanel(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
     panel.isReleasedWhenClosed = false
     panel.hidesOnDeactivate = false
@@ -149,6 +160,7 @@ func build() {
 }
 
 func show() {
+    applyTheme(Theme.load())
     state.apps = Apps.scan(Apps.sources())
     state.counts = (try? String(contentsOfFile: Apps.countsPath(), encoding: .utf8)).map(Apps.parseCounts) ?? [:]
     state.query = ""
@@ -163,7 +175,7 @@ func show() {
     let top = sf.minY + sf.size.height * 0.75
     if let (panel, view) = ui {
         let h = height(items: ROWS)
-        panel.setFrame(NSRect(x: sf.minX + (sf.size.width - WIDTH) / 2.0, y: top - h, width: WIDTH, height: h), display: true)
+        panel.setFrame(NSRect(x: sf.minX + (sf.size.width - theme.width) / 2.0, y: top - h, width: theme.width, height: h), display: true)
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(view)
         view.display()

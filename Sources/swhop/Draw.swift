@@ -4,15 +4,15 @@ import AppKit
 
 func drawPanel(_ b: NSRect) {
     let items = items()
-    // Window (the part in use): #2D2D2D, radius 12. No border: on the edge
-    // it reads as a dark halo.
+    // Window (the part in use), color and radius from the theme (default:
+    // #2D2D2D, radius 12). No border: on the edge it reads as a dark halo.
     let used = NSRect(x: b.minX, y: b.minY, width: b.size.width, height: height(items: items.count))
-    fillRounded(used, 12.0, rgba(0x2D2D2DFF))
+    fillRounded(used, theme.windowRadius, rgba(theme.window))
 
-    // Search field: #00000026, radius 8, white IBM Plex Sans 16.
+    // Search field, color, radius and font from the theme.
     let ff = fieldFont
     let field = NSRect(x: PAD, y: PAD, width: b.size.width - 2.0 * PAD, height: fieldH())
-    fillRounded(field, 8.0, rgba(0x00000026))
+    fillRounded(field, theme.radius, rgba(theme.field))
     let query = state.query
     let text = NSRect(
         x: field.minX + FIELD_PAD_X,
@@ -20,26 +20,27 @@ func drawPanel(_ b: NSRect) {
         width: field.size.width - 2.0 * FIELD_PAD_X,
         height: field.size.height
     )
-    drawTextLeft(query, ff, white(1.0), text)
+    drawTextLeft(query, ff, rgba(theme.text), text)
     // Caret after the text.
     let cx = text.minX + textSize(query, ff).width + 1.0
     let ch = textSize("Ag", ff).height
-    white(1.0).setFill()
+    rgba(theme.text).setFill()
     NSRect(x: cx, y: field.minY + (field.size.height - ch) / 2.0, width: 1.5, height: ch).fill()
 
-    // Rows: icon 24, IBM Plex Sans 12; the selected one on #3E3E3E7F.
+    // Rows: icon 24, row font from the theme; the selected one's color and
+    // radius come from the theme too.
     let rf = rowFont
     let selected = state.selected
     for (k, item) in items.enumerated() {
         let r = NSRect(x: PAD, y: rowsTop() + CGFloat(k) * ROW_H, width: b.size.width - 2.0 * PAD, height: ROW_H)
         let sel = k == selected
         if sel {
-            fillRounded(r, 8.0, rgba(0x3E3E3E7F))
+            fillRounded(r, theme.radius, rgba(theme.selection))
         }
         let icon = NSRect(x: r.minX + ICON_PAD, y: r.minY + ROW_PAD_Y, width: ICON, height: ICON)
         let labelX = icon.minX + ICON + 2.0 * ICON_PAD
         let label = NSRect(x: labelX, y: r.minY, width: r.size.width - (labelX - r.minX), height: ROW_H)
-        let color: NSColor = sel ? white(1.0) : rgba(0xFFFFFFE5)
+        let color: NSColor = sel ? rgba(theme.text) : rgba(theme.rowText)
         switch item {
         case .calc(let v):
             drawIcon(iconCached(CALCULATOR), icon)
@@ -73,10 +74,10 @@ func drawIcon(_ img: NSImage, _ r: NSRect) {
     img.draw(in: r, from: .zero, operation: .sourceOver, fraction: 1.0, respectFlipped: true, hints: nil)
 }
 
-/// The SF Symbol "xmark", tinted white to read on the dark rows. Falls back
-/// to an empty image if the symbol is unavailable.
+/// The SF Symbol "xmark", tinted with the theme's text color so it reads
+/// on the rows. Falls back to an empty image if the symbol is unavailable.
 func quitIcon() -> NSImage {
-    let cfg = NSImage.SymbolConfiguration(hierarchicalColor: white(1.0))
+    let cfg = NSImage.SymbolConfiguration(hierarchicalColor: rgba(theme.text))
     return NSImage(systemSymbolName: "xmark", accessibilityDescription: nil)?
         .withSymbolConfiguration(cfg)
         ?? NSImage()
