@@ -86,10 +86,15 @@ enum Service {
     }
 
     /// A launchctl call's exit status; -1 if launchctl itself would not start.
-    private static func runLaunchctl(_ args: [String]) -> Int32 {
+    /// `quiet` drops launchctl's own output.
+    private static func runLaunchctl(_ args: [String], quiet: Bool = false) -> Int32 {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/bin/launchctl")
         p.arguments = args
+        if quiet {
+            p.standardOutput = FileHandle.nullDevice
+            p.standardError = FileHandle.nullDevice
+        }
         do {
             try p.run()
         } catch {
@@ -99,8 +104,10 @@ enum Service {
         return p.terminationStatus
     }
 
+    /// Whether the agent is loaded. Quiet: `print` dumps the whole service,
+    /// or "Bad request. Could not find service" when it is not loaded.
     private static func loaded(_ target: String) -> Bool {
-        runLaunchctl(["print", target]) == 0
+        runLaunchctl(["print", target], quiet: true) == 0
     }
 
     /// The running binary's path, symlinks resolved, for the plist.
