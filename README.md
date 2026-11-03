@@ -33,17 +33,9 @@ visible app to quit (Finder and swhop itself are kept).
 
 ## Launch at login
 
-Install a launchd agent (restarted if it dies):
-
-```
-.build/release/swhop --start-service
-.build/release/swhop --stop-service
-.build/release/swhop --restart-service
-.build/release/swhop --uninstall-service
-```
-
-The agent is `local.swhop` in `~/Library/LaunchAgents`; its logs go to
-`~/Library/Logs/swhop/{out,err}.log`.
+`brew services start swhop` starts it now and at login, and restarts it if
+it crashes; `brew services stop swhop` stops it. Logs go to
+`$(brew --prefix)/var/log/swhop.log`.
 
 ## App sources
 

@@ -383,4 +383,3 @@ func height(items n: Int) -> CGFloat {
     2.0 * PAD + fieldH() + (n > 0 ? SPACING + CGFloat(n) * ROW_H : 0.0)
 }
 
-

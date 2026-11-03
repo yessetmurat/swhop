@@ -19,7 +19,6 @@ enum SelfCheck {
     static func run() -> Never {
         calc()
         apps()
-        plistChecks()
         theme()
         paste()
         if failures.isEmpty {
@@ -109,25 +108,6 @@ enum SelfCheck {
             Apps.parseCounts("x\t/a.app\n2\n4\t/b.app\n") == ["/b.app": 4]
         })
         scanFixture()
-    }
-
-    // MARK: Plist
-
-    private static func plistChecks() {
-        let xml: String? = Service.plist(label: "local.swhop", exe: "/opt/swhop/swhop")
-        let d: [String: Any]?
-        if let data = xml?.data(using: .utf8) {
-            d = (try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)) as? [String: Any]
-        } else {
-            d = nil
-        }
-        check("plist decodes", { d != nil })
-        check("plist label", { d?["Label"] as? String == "local.swhop" })
-        check("plist program", { d?["ProgramArguments"] as? [String] == ["/opt/swhop/swhop"] })
-        check("plist runatload", { d?["RunAtLoad"] as? Bool == true })
-        check("plist keepalive", { (d?["KeepAlive"] as? [String: Any])?["SuccessfulExit"] as? Bool == false })
-        check("plist out log", { d?["StandardOutPath"] as? String == Service.logsDir() + "/out.log" })
-        check("plist err log", { d?["StandardErrorPath"] as? String == Service.logsDir() + "/err.log" })
     }
 
     private static func scanFixture() {
