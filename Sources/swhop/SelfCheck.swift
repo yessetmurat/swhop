@@ -19,7 +19,7 @@ enum SelfCheck {
     static func run() -> Never {
         calc()
         apps()
-        theme()
+        config()
         paste()
         if failures.isEmpty {
             print("ok")
@@ -59,17 +59,6 @@ enum SelfCheck {
         // file name ("Cafe" + combining acute).
         check("score NFC query matches NFD name", {
             Apps.score("\u{E9}", "Cafe\u{301}") != nil
-        })
-        check("parseSources: trim, skip comments and blanks, expand ~", {
-            Apps.parseSources(
-                """
-                # app sources
-
-                  /Applications
-                ~/Applications
-                /System/Applications
-                """, home: "/h"
-            ) == ["/Applications", "/h/Applications", "/System/Applications"]
         })
         let apps = [
             App(name: "Telegram", path: "/Applications/Telegram.app"),
@@ -136,82 +125,81 @@ enum SelfCheck {
 
     // MARK: Theme
 
-    private static func theme() {
-        let d = Theme()
+    private static func config() {
+        let home = "/h"
+        let d = Config(apps: ["/Applications", "/System/Applications", "/h/Applications"], theme: Theme())
+        func parse(_ t: String) -> (config: Config, errors: [String]) { Config.parse(t, home: home) }
         check("theme defaults are Megan", {
-            d.window == 0x2D2D2DFF && d.field == 0x00000026 && d.selection == 0x3E3E3E7F
-                && d.text == 0xFFFFFFFF && d.rowText == 0xFFFFFFE5
-                && d.windowRadius == 12 && d.radius == 8 && d.font == "IBMPlexSans"
-                && d.fieldFontSize == 16 && d.rowFontSize == 12 && d.width == 480
+            let t = Theme()
+            return t.window == 0x2D2D2DFF && t.field == 0x00000026 && t.selection == 0x3E3E3E7F
+                && t.text == 0xFFFFFFFF && t.rowText == 0xFFFFFFE5 && t.windowRadius == 12 && t.radius == 8
+                && t.fieldFont == FontSpec(family: "IBM Plex Sans", style: "Regular", size: 16)
+                && t.rowFont == FontSpec(family: "IBM Plex Sans", style: "Regular", size: 12) && t.width == 480
         })
-        check("parse empty -> defaults", {
-            let r = Theme.parse("")
-            return r.theme == d && r.errors.isEmpty
+        check("default text round-trip", {
+            let r = parse(Config.defaultText)
+            return r.config == d && r.errors.isEmpty
         })
-        check("parse all keys", {
-            let r = Theme.parse(
-                """
-                # light
-                window = FFFFFFFF
-                field = 0000000F
-                selection = DDDDDD
-                text = 000000FF
-                row_text = 333333CC
-                window_radius = 0
+        check("empty file -> defaults", {
+            let r = parse("")
+            return r.config == d && r.errors.isEmpty
+        })
+        check("all keys", {
+            let r = parse("""
+                apps = ["/A", "~/B"]
+                [theme]
+                window = "0xFFFFFFFF"
+                field = "0x0F000000"
+                selection = "0xFFDDDDDD"
+                text = "0xFF000000"
+                row-text = "0xCC333333"
+                window-radius = 0
                 radius = 4.5
-                font = Menlo
-                field_font_size = 20
-                row_font_size = 14
+                field-font = "Menlo:Bold:20"
+                row-font = "Menlo:Regular:14"
                 width = 600
                 """)
-            var w = Theme()
-            w.window = 0xFFFFFFFF; w.field = 0x0000000F; w.selection = 0xDDDDDDFF
-            w.text = 0x000000FF; w.rowText = 0x333333CC
-            w.windowRadius = 0; w.radius = 4.5; w.font = "Menlo"
-            w.fieldFontSize = 20; w.rowFontSize = 14; w.width = 600
-            return r.theme == w && r.errors.isEmpty
+            var t = Theme()
+            t.window = 0xFFFFFFFF; t.field = 0x0000000F; t.selection = 0xDDDDDDFF; t.text = 0x000000FF; t.rowText = 0x333333CC
+            t.windowRadius = 0; t.radius = 4.5; t.width = 600
+            t.fieldFont = FontSpec(family: "Menlo", style: "Bold", size: 20)
+            t.rowFont = FontSpec(family: "Menlo", style: "Regular", size: 14)
+            return r.config == Config(apps: ["/A", "/h/B"], theme: t) && r.errors.isEmpty
         })
-        check("parse crlf and spacing", {
-            let r = Theme.parse("  window\t=  #102030 \r\n\r\n  # c\r\nwidth=500\r\n")
-            var w = Theme()
-            w.window = 0x102030FF; w.width = 500
-            return r.theme == w && r.errors.isEmpty
+        check("bad color", {
+            let r = parse("[theme]\nwindow = \"2D2D2D\"\nwidth = 600")
+            return r.config.theme.window == Theme().window && r.config.theme.width == 600 && r.errors.count == 1
         })
-        check("parse last key wins", {
-            Theme.parse("width = 500\nwidth = 520").theme.width == 520
+        check("bad font", {
+            let r = parse("[theme]\nrow-font = \"Menlo\"")
+            return r.config.theme.rowFont == Theme().rowFont && r.errors.count == 1
         })
-        check("parse errors", {
-            let r = Theme.parse(
-                """
-                window
-                colour = FFFFFF
-                window = 12345
-                window = GGGGGG
-                field = +2D2D2DF
-                width = -1
-                width = inf
-                radius = abc
-                window_radius = -2
-                font =
-                row_font_size = 0
-                """)
-            return r.theme == d && r.errors == [
-                "line 1: expected key = value",
-                "line 2: unknown key colour",
-                "line 3: bad value for window",
-                "line 4: bad value for window",
-                "line 5: bad value for field",
-                "line 6: bad value for width",
-                "line 7: bad value for width",
-                "line 8: bad value for radius",
-                "line 9: bad value for window_radius",
-                "line 10: bad value for font",
-                "line 11: bad value for row_font_size",
-            ]
+        check("bad number", {
+            let r = parse("[theme]\nwidth = 0\nradius = \"8\"")
+            return r.config.theme == Theme() && r.errors.count == 2
         })
-        check("parse partial", {
-            let r = Theme.parse("width = 600\nwidth = wide\nradius = 2")
-            return r.theme.width == 600 && r.theme.radius == 2 && r.errors == ["line 2: bad value for width"]
+        check("unknown key", {
+            let r = parse("[theme]\nblur = 1\n[extra]\na = 1")
+            return r.config == d && r.errors.count == 2
+        })
+        check("bad apps", {
+            let r = parse("apps = 3")
+            return r.config.apps == d.apps && r.errors.count == 1
+        })
+        check("missing theme", {
+            let r = parse("apps = [\"/X\"]")
+            return r.config.theme == Theme() && r.config.apps == ["/X"] && r.errors.isEmpty
+        })
+        check("tilde only for the home dir", {
+            parse("apps = [\"~/A\", \"~\", \"~bob/B\"]").config.apps == ["/h/A", "/h", "~bob/B"]
+        })
+        check("huge numbers", {
+            let r = parse("[theme]\nwidth = 1e308\nradius = 9223372036854775807\nrow-font = \"Menlo:Regular:100000\"")
+            return r.config.theme == Theme() && r.errors.count == 3
+        })
+        check("syntax error", {
+            let r = parse("apps = [")
+            return r.config == d && r.errors.count == 1
         })
     }
 

@@ -10,7 +10,8 @@ Swift. Typing filters apps (Enter opens one) or evaluates arithmetic
 swift build -c release
 ```
 
-No dependencies: Swift Package Manager, Foundation/AppKit/Carbon only.
+Swift Package Manager, Foundation/AppKit/Carbon, and TOMLKit for the config
+(fetched by SwiftPM on the first build).
 
 ## Run
 
@@ -37,73 +38,41 @@ visible app to quit (Finder and swhop itself are kept).
 it crashes; `brew services stop swhop` stops it. Logs go to
 `$(brew --prefix)/var/log/swhop.log`.
 
-## App sources
+## Config
 
-Where apps are found is set in `~/.config/swhop/apps`: one entry per
-line, a folder or a single `.app` bundle. Folders are scanned at the top
-level and one level down (not inside bundles); a bundle entry is added
-as-is. The first entry wins a name. Blank lines and `#` comments are
-skipped; a leading `~` is the home dir. An existing file replaces the
-defaults completely; without the file the defaults are:
+Everything is set in `~/.config/swhop/swhop.toml`, in the format swwm uses:
+kebab-case keys, colors as `"0xAARRGGBB"`, fonts as `"Family:Style:Size"`.
+swhop writes the file with the defaults below when it is missing. It is
+read every time the panel opens, so edits apply without a restart. A bad,
+mistyped or unknown key is logged to stderr and keeps its default; a file
+that does not parse is left as it is and the defaults are used.
 
+```toml
+# Where apps are found: folders (scanned at the top level and one level
+# down, not inside bundles) or single .app bundles; a leading ~ is the
+# home dir; the first entry wins a name.
+apps = [
+  "/Applications",
+  "/System/Applications",
+  "~/Applications",
+]
+
+# The panel look (the Megan theme).
+[theme]
+window = "0xFF2D2D2D"           # panel background
+field = "0x26000000"            # search field background
+selection = "0x7F3E3E3E"        # selected row background
+text = "0xFFFFFFFF"             # query, caret, selected row label, quit mark
+row-text = "0xE5FFFFFF"         # other row labels
+window-radius = 12              # panel corners
+radius = 8                      # field and selection corners
+field-font = "IBM Plex Sans:Regular:16"
+row-font = "IBM Plex Sans:Regular:12"
+width = 480                     # panel width
 ```
-/Applications
-/System/Applications
-~/Applications
-```
 
-Example:
-
-```
-# Folders: .app bundles at the top level and one subfolder down.
-/Applications
-/System/Applications
-~/Applications
-# Single apps.
-/System/Library/CoreServices/Applications/Keychain Access.app
-```
-
-The list is rescanned every time the panel opens, so edits apply without
-a restart.
-
-## Theme
-
-The panel's colors, corner radii, font and width can be changed in
-`~/.config/swhop/theme`: one `key = value` per line. A line whose first
-non-blank character is `#` is a comment; a `#` later in the line is
-part of the value. Colors are `RRGGBB` or `RRGGBBAA` hex with an
-optional leading `#` (6 digits mean opaque). A bad line is logged to
-stderr and skipped; an unknown `font` name falls back to the system
-font without a message; a missing file means the default look. The
-file is reread every time the panel opens, so edits apply without a
-restart.
-
-| key | default | meaning |
-|---|---|---|
-| `window` | `2D2D2DFF` | panel background |
-| `field` | `00000026` | search field background |
-| `selection` | `3E3E3E7F` | selected row background |
-| `text` | `FFFFFFFF` | query, caret, selected row label, quit mark |
-| `row_text` | `FFFFFFE5` | other row labels |
-| `window_radius` | `12` | panel corners |
-| `radius` | `8` | field and selection corners |
-| `font` | `IBMPlexSans` | PostScript font name |
-| `field_font_size` | `16` | query font size |
-| `row_font_size` | `12` | row font size |
-| `width` | `480` | panel width |
-
-Example:
-
-```
-# A light theme.
-window = F5F5F5FF
-field = 0000000F
-selection = 0000001A
-text = 000000FF
-row_text = 000000CC
-font = Menlo
-width = 560
-```
+A font whose family or style is not installed falls back to the system
+font at that size.
 
 ## How ranking works
 
@@ -120,7 +89,7 @@ then the name (case-insensitive). Launch counts are kept in
 ```
 
 Runs the asserts over the pure logic (calc, fuzzy scoring, ranking,
-source parsing, the agent's plist) and prints `ok` on success.
+config parsing) and prints `ok` on success.
 
 ## License
 

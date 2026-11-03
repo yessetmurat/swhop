@@ -10,32 +10,6 @@ struct App {
 }
 
 enum Apps {
-    /// Where apps live, one entry per line in `~/.config/swhop/apps`:
-    /// folders (scanned as now) or single `.app` bundles (added as-is),
-    /// trimmed, blank lines and `#` comments skipped, a leading `~` is the
-    /// home dir; the first entry wins a name. A missing or unreadable file
-    /// falls back to the defaults, and an existing file replaces them
-    /// completely.
-    static func sources() -> [String] {
-        let home = homeDir()
-        let path = home + "/.config/swhop/apps"
-        if let text = try? String(contentsOfFile: path, encoding: .utf8) {
-            return parseSources(text, home: home)
-        }
-        return ["/Applications", "/System/Applications", home + "/Applications"]
-    }
-
-    /// The parser for `sources`; pure for the self-check.
-    static func parseSources(_ text: String, home: String) -> [String] {
-        var out: [String] = []
-        for raw in text.split(separator: "\n") {
-            let line = raw.trimmingCharacters(in: .whitespaces)
-            guard !line.isEmpty, !line.hasPrefix("#") else { continue }
-            out.append(line.hasPrefix("~") ? home + String(line.dropFirst()) : line)
-        }
-        return out
-    }
-
     /// `.app` bundles at the top of each folder entry and in its direct
     /// subfolders (`Utilities`), not inside bundles; a path to a single
     /// bundle is added as-is; the first entry wins a name.

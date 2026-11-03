@@ -1,7 +1,7 @@
 // The panel: built once and toggled by the hotkey. Typing filters apps
 // (Enter opens one) or evaluates arithmetic (Enter copies it). The look
-// defaults to the Alfred theme "Megan" and can be changed in
-// `~/.config/swhop/theme`.
+// defaults to the Megan theme and can be changed in
+// `~/.config/swhop/swhop.toml`.
 
 import AppKit
 import Carbon
@@ -52,15 +52,15 @@ let state = PanelState()
 var ui: (panel: SwhopPanel, view: SwhopView)?
 
 var theme = Theme()
-var fieldFont = panelFont(["IBMPlexSans", "IBMPlexSans-Regular"], 16.0)
-var rowFont = panelFont(["IBMPlexSans", "IBMPlexSans-Regular"], 12.0)
+var fieldFont = panelFont(Theme().fieldFont)
+var rowFont = panelFont(Theme().rowFont)
 
-/// The colors, fonts and width from the theme file; the fonts are rebuilt
+/// The colors, fonts and width from the config; the fonts are rebuilt
 /// and the quit mark dropped so it is redrawn in the new text color.
 func applyTheme(_ t: Theme) {
     theme = t
-    fieldFont = panelFont([t.font, t.font + "-Regular"], t.fieldFontSize)
-    rowFont = panelFont([t.font, t.font + "-Regular"], t.rowFontSize)
+    fieldFont = panelFont(t.fieldFont)
+    rowFont = panelFont(t.rowFont)
     state.icons[QUIT_ICON_KEY] = nil
 }
 
@@ -116,11 +116,12 @@ enum Panel {
         let app = NSApplication.shared
         // No Dock icon, no menu bar of its own.
         app.setActivationPolicy(.accessory)
-        applyTheme(Theme.load())
+        let config = Config.load()
+        applyTheme(config.theme)
         build()
         // Icons cost a few ms each the first time: load them now, not while
         // the user types. Apps installed later get theirs when first shown.
-        for a in Apps.scan(Apps.sources()) {
+        for a in Apps.scan(config.apps) {
             state.icons[a.path] = NSWorkspace.shared.icon(forFile: a.path)
         }
         if let err = Hotkey.register(toggle) {
@@ -160,8 +161,9 @@ func build() {
 }
 
 func show() {
-    applyTheme(Theme.load())
-    state.apps = Apps.scan(Apps.sources())
+    let config = Config.load()
+    applyTheme(config.theme)
+    state.apps = Apps.scan(config.apps)
     state.counts = (try? String(contentsOfFile: Apps.countsPath(), encoding: .utf8)).map(Apps.parseCounts) ?? [:]
     state.query = ""
     state.selected = 0

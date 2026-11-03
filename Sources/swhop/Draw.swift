@@ -1,4 +1,4 @@
-// Drawing the panel in the Alfred theme "Megan".
+// Drawing the panel in the configured theme (Megan by default).
 
 import AppKit
 
@@ -88,7 +88,7 @@ func fillRounded(_ r: NSRect, _ radius: CGFloat, _ color: NSColor) {
     NSBezierPath(roundedRect: r, xRadius: radius, yRadius: radius).fill()
 }
 
-/// `0xRRGGBBAA` as in the Alfred theme.
+/// `0xRRGGBBAA`, as Theme keeps its colors.
 func rgba(_ c: UInt32) -> NSColor {
     func ch(_ shift: UInt32) -> CGFloat { CGFloat((c >> shift) & 0xFF) / 255.0 }
     return NSColor(srgbRed: ch(24), green: ch(16), blue: ch(8), alpha: ch(0))

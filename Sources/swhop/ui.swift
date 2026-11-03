@@ -6,12 +6,15 @@ func logErr(_ s: String) {
     FileHandle.standardError.write((s + "\n").data(using: .utf8)!)
 }
 
-/// First font found by PostScript name, else the system font.
-func panelFont(_ names: [String], _ size: CGFloat) -> NSFont {
-    for n in names {
-        if let f = NSFont(name: n, size: size) { return f }
+/// The face by family and style name (PostScript names differ: "SemiBold"
+/// is IBMPlexSans-SmBld), as swwm finds it; else the system font.
+func panelFont(_ spec: FontSpec) -> NSFont {
+    let members = NSFontManager.shared.availableMembers(ofFontFamily: spec.family) ?? []
+    if let member = members.first(where: { ($0[1] as? String)?.caseInsensitiveCompare(spec.style) == .orderedSame }),
+       let name = member[0] as? String, let font = NSFont(name: name, size: spec.size) {
+        return font
     }
-    return NSFont.systemFont(ofSize: size)
+    return NSFont.systemFont(ofSize: spec.size)
 }
 
 func white(_ a: CGFloat) -> NSColor {
