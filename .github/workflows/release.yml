@@ -1,7 +1,7 @@
 name: Release
 
 # Push a tag like v0.1.0 to build, publish a GitHub release with the
-# prebuilt binary, and bump the Homebrew formula in yessetmurat/homebrew-tap.
+# prebuilt binary, and bump the Homebrew formula in the owner's homebrew-tap.
 on:
   push:
     tags: ["v*"]
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 env:
-  TAP_REPO: yessetmurat/homebrew-tap
+  TAP_REPO: ${{ github.repository_owner }}/homebrew-tap
 
 jobs:
   release:

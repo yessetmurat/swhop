@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.0
 import PackageDescription
 
 let package = Package(
@@ -8,6 +8,13 @@ let package = Package(
         .package(url: "https://github.com/LebJe/TOMLKit", from: "0.6.0"),
     ],
     targets: [
-        .executableTarget(name: "swhop", dependencies: ["TOMLKit"]),
+        .target(name: "SwhopCore", dependencies: ["TOMLKit"], path: "Sources/core"),
+        .executableTarget(
+            name: "swhop",
+            dependencies: ["SwhopCore"],
+            // The panel keeps its state in globals, which Swift 6 mode rejects.
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .testTarget(name: "SwhopCoreTests", dependencies: ["SwhopCore"]),
     ]
 )

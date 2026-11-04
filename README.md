@@ -82,14 +82,14 @@ start of the name). Among equal matches, launch counts break the tie,
 then the name (case-insensitive). Launch counts are kept in
 `~/Library/Application Support/swhop/counts`.
 
-## Self-check
+## Tests
 
 ```
-.build/release/swhop --test
+swift test
 ```
 
-Runs the asserts over the pure logic (calc, fuzzy scoring, ranking,
-config parsing) and prints `ok` on success.
+Swift Testing over the pure logic in `SwhopCore` (calc, fuzzy scoring,
+ranking, launch counts, config parsing, paste cleanup).
 
 ## License
 

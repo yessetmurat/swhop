@@ -1,18 +1,19 @@
-// swhop: a light app launcher and calculator for macOS on cmd+space.
-// `swhop` runs it; `swhop --test` runs the self-check. At login it is started
-// by `brew services`.
+//
+//  main.swift
+//  swhop
+//
+//  Created by Yesset Murat on 31.10.2026.
+//
+
+// swhop: a light app launcher and calculator for macOS on cmd+space. Takes
+// no arguments. At login it is started by `brew services`.
 
 import Foundation
 
-let usage = "usage: swhop | swhop --test"
+let usage = "usage: swhop"
 
-let args = Array(CommandLine.arguments.dropFirst())
-
-if args.isEmpty {
-    Panel.run()
+if CommandLine.arguments.count > 1 {
+    logErr(usage)
+    exit(2)
 }
-if args == ["--test"] {
-    SelfCheck.run()
-}
-logErr(usage)
-exit(2)
+Panel.run()

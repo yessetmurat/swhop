@@ -1,49 +1,29 @@
-// `~/.config/swhop/swhop.toml`: where apps are found and the panel theme, in
-// the format swwm uses (kebab-case keys, "0xAARRGGBB" colors,
-// "Family:Style:Size" fonts). Read on every panel open; written with the
-// defaults when missing.
+//
+//  Config.swift
+//  SwhopCore
+//
+//  Created by Yesset Murat on 03.11.2026.
+//
+
+// swhop.toml: where apps are found and the panel theme, in the format swwm
+// uses (kebab-case keys, "0xAARRGGBB" colors, "Family:Style:Size" fonts).
+// The file itself is read and written by the app's ConfigLoader.
 
 import Foundation
 import TOMLKit
 
-struct Config: Equatable {
-    var apps: [String]
-    var theme: Theme
+public struct Config: Equatable, Sendable {
 
-    static func defaults(home: String) -> Config {
+    public var apps: [String]
+    public var theme: Theme
+
+    public static func defaults(home: String) -> Config {
         Config(apps: ["/Applications", "/System/Applications", home + "/Applications"], theme: Theme())
     }
 
-    static func path() -> String {
-        Apps.homeDir() + "/.config/swhop/swhop.toml"
-    }
-
-    /// The config from the file, each error logged. A missing file is
-    /// written with `defaultText` first; an unreadable or broken one is left
-    /// alone and its bad parts fall back to the defaults.
-    static func load() -> Config {
-        let home = Apps.homeDir()
-        let fm = FileManager.default
-        // A link, even a dangling one, is the user's: never replaced.
-        let isLink = (try? fm.destinationOfSymbolicLink(atPath: path())) != nil
-        if !isLink, !fm.fileExists(atPath: path()) {
-            try? fm.createDirectory(atPath: home + "/.config/swhop", withIntermediateDirectories: true)
-            try? defaultText.write(toFile: path(), atomically: true, encoding: .utf8)
-        }
-        guard let text = try? String(contentsOfFile: path(), encoding: .utf8) else {
-            logErr("swhop: cannot read \(path()), using the defaults")
-            return defaults(home: home)
-        }
-        let (config, errors) = parse(text, home: home)
-        for e in errors {
-            logErr("swhop: swhop.toml: " + e)
-        }
-        return config
-    }
-
-    /// The parser; pure for the self-check. Every bad, mistyped or unknown
-    /// key is reported and keeps its default; a missing key is its default.
-    static func parse(_ text: String, home: String) -> (config: Config, errors: [String]) {
+    /// The parser; pure. Every bad, mistyped or unknown key is reported and
+    /// keeps its default; a missing key is its default.
+    public static func parse(_ text: String, home: String) -> (config: Config, errors: [String]) {
         var c = defaults(home: home)
         var errors: [String] = []
         let root: TOMLTable
@@ -54,9 +34,11 @@ struct Config: Equatable {
         } catch {
             return (c, ["\(error)"])
         }
+
         for key in root.keys where !["apps", "theme"].contains(key) {
             errors.append("unknown key \(key)")
         }
+
         if let v = root["apps"] {
             if let list = v.array, case let paths = list.compactMap(\.string), paths.count == list.count {
                 c.apps = paths.map { $0 == "~" || $0.hasPrefix("~/") ? home + String($0.dropFirst()) : $0 }
@@ -64,8 +46,13 @@ struct Config: Equatable {
                 errors.append("apps must be a list of paths")
             }
         }
-        guard let v = root["theme"] else { return (c, errors) }
-        guard let t = v.table else { return (c, errors + ["theme must be a table"]) }
+
+        guard let v = root["theme"] else {
+            return (c, errors)
+        }
+        guard let t = v.table else {
+            return (c, errors + ["theme must be a table"])
+        }
         for key in t.keys {
             switch key {
             case "window", "field", "selection", "text", "row-text":
@@ -83,7 +70,8 @@ struct Config: Equatable {
                 }
             case "window-radius", "radius", "width":
                 // Bounded: a huge value would build an absurd window frame.
-                guard let n = t[key].flatMap(number), key == "width" ? (1...10000).contains(n) : (0...1000).contains(n) else {
+                let range: ClosedRange<CGFloat> = key == "width" ? 1...10000 : 0...1000
+                guard let n = t[key].flatMap(number), range.contains(n) else {
                     errors.append("theme.\(key) must be a number")
                     continue
                 }
@@ -108,7 +96,9 @@ struct Config: Equatable {
     /// "0xAARRGGBB", case-insensitive.
     private static func color(_ s: String) -> UInt32? {
         let hex = s.lowercased()
-        guard hex.hasPrefix("0x"), hex.count == 10 else { return nil }
+        guard hex.hasPrefix("0x"), hex.count == 10 else {
+            return nil
+        }
         return UInt32(hex.dropFirst(2), radix: 16)
     }
 
@@ -119,7 +109,7 @@ struct Config: Equatable {
         return nil
     }
 
-    static let defaultText = """
+    public static let defaultText = """
     # swhop configuration. Changes apply the next time the panel opens.
 
     # Where apps are found: folders (scanned at the top level and one level

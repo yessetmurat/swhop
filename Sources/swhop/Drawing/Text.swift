@@ -1,10 +1,14 @@
-// Panel text helpers: measuring, drawing, and the stderr logger.
+//
+//  Text.swift
+//  swhop
+//
+//  Created by Yesset Murat on 31.10.2026.
+//
+
+// Panel text: finding the font, measuring and drawing.
 
 import AppKit
-
-func logErr(_ s: String) {
-    FileHandle.standardError.write((s + "\n").data(using: .utf8)!)
-}
+import SwhopCore
 
 /// The face by family and style name (PostScript names differ: "SemiBold"
 /// is IBMPlexSans-SmBld), as swwm finds it; else the system font.
@@ -17,17 +21,18 @@ func panelFont(_ spec: FontSpec) -> NSFont {
     return NSFont.systemFont(ofSize: spec.size)
 }
 
-func white(_ a: CGFloat) -> NSColor {
-    NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: a)
-}
-
 /// The size the text occupies at that font; the color does not affect it.
 func textSize(_ s: String, _ f: NSFont) -> NSSize {
     (s as NSString).size(withAttributes: [.font: f])
 }
 
 /// Text at the left edge of the rect, centered vertically.
-func drawTextLeft(_ s: String, _ f: NSFont, _ color: NSColor, _ r: NSRect) {
+func drawTextLeft(
+    _ s: String,
+    _ f: NSFont,
+    _ color: NSColor,
+    _ r: NSRect
+) {
     let size = textSize(s, f)
     let p = NSPoint(x: r.minX, y: r.minY + (r.height - size.height) / 2.0)
     (s as NSString).draw(at: p, withAttributes: [.font: f, .foregroundColor: color])
