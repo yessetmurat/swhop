@@ -72,7 +72,8 @@ public struct Config: Equatable, Sendable {
                 // Bounded: a huge value would build an absurd window frame.
                 let range: ClosedRange<CGFloat> = key == "width" ? 1...10000 : 0...1000
                 guard let n = t[key].flatMap(number), range.contains(n) else {
-                    errors.append("theme.\(key) must be a number")
+                    let bounds = "\(Int(range.lowerBound)) to \(Int(range.upperBound))"
+                    errors.append("theme.\(key) must be a number from \(bounds)")
                     continue
                 }
                 switch key {
@@ -96,7 +97,8 @@ public struct Config: Equatable, Sendable {
     /// "0xAARRGGBB", case-insensitive.
     private static func color(_ s: String) -> UInt32? {
         let hex = s.lowercased()
-        guard hex.hasPrefix("0x"), hex.count == 10 else {
+        // Hex digits only: `UInt32(_:radix:)` would take a sign.
+        guard hex.hasPrefix("0x"), hex.count == 10, hex.dropFirst(2).allSatisfy(\.isHexDigit) else {
             return nil
         }
         return UInt32(hex.dropFirst(2), radix: 16)

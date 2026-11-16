@@ -19,8 +19,7 @@ public enum Apps {
         var out: [App] = []
         var seen = Set<String>()
         func add(_ path: String) {
-            let component = (path as NSString).lastPathComponent
-            let name = NSString(string: component).deletingPathExtension
+            let name = ((path as NSString).lastPathComponent as NSString).deletingPathExtension
             guard seen.insert(name).inserted else {
                 return
             }
@@ -72,18 +71,20 @@ public enum Apps {
         var best: [Int?] = (0..<n.count).map { j in eq(j, first) ? points(j) : nil }
         for c in q.dropFirst() {
             best = (0..<n.count).map { j -> Int? in
+                guard eq(j, c) else {
+                    return nil
+                }
+
+                // The best earlier letter, +5 if it is right before j.
                 var prev: Int? = nil
                 for k in 0..<j {
                     guard let b = best[k] else {
                         continue
                     }
                     let cand = b + (k + 1 == j ? 5 : 0)
-                    if prev == nil || cand > prev! { prev = cand }
+                    prev = max(prev ?? cand, cand)
                 }
-                guard let p = prev, eq(j, c) else {
-                    return nil
-                }
-                return p + points(j)
+                return prev.map { $0 + points(j) }
             }
         }
 
@@ -133,9 +134,8 @@ public enum Apps {
     // MARK: - Helpers
 
     private static func entries(_ dir: String) -> [String] {
-        (try? FileManager.default.contentsOfDirectory(atPath: dir))
-            .map { $0.sorted().map { dir + "/" + $0 } }
-            .flatMap { $0 } ?? []
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: dir)) ?? []
+        return names.sorted().map { dir + "/" + $0 }
     }
 
     private static func isApp(_ path: String) -> Bool {

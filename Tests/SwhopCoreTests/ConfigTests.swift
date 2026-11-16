@@ -98,6 +98,15 @@ private func parse(_ text: String) -> (config: Config, errors: [String]) {
 
     #expect(r.config.theme == Theme())
     #expect(r.errors.count == 2)
+    #expect(r.errors.contains("theme.width must be a number from 1 to 10000"))
+}
+
+/// `UInt32(_:radix:)` takes a sign; a color must not.
+@Test func signedColor() {
+    let r = parse("[theme]\nwindow = \"0x+2D2D2D2\"\ntext = \"0x-0000000\"")
+
+    #expect(r.config.theme == Theme())
+    #expect(r.errors.count == 2)
 }
 
 @Test func unknownKey() {

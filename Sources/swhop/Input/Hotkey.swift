@@ -8,7 +8,6 @@
 // The global hotkey (cmd+space) through Carbon's RegisterEventHotKey: no
 // Accessibility permission needed, delivered on the main run loop.
 
-import AppKit
 import Carbon
 
 enum Hotkey {

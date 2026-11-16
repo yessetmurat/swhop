@@ -24,7 +24,8 @@ enum ConfigLoader {
         // A link, even a dangling one, is the user's: never replaced.
         let isLink = (try? fm.destinationOfSymbolicLink(atPath: path)) != nil
         if !isLink, !fm.fileExists(atPath: path) {
-            try? fm.createDirectory(atPath: home + "/.config/swhop", withIntermediateDirectories: true)
+            let folder = (path as NSString).deletingLastPathComponent
+            try? fm.createDirectory(atPath: folder, withIntermediateDirectories: true)
             try? Config.defaultText.write(toFile: path, atomically: true, encoding: .utf8)
         }
 

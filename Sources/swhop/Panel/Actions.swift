@@ -25,19 +25,7 @@ func choose() {
         hide(true)
     case .app(let i):
         let path = state.apps[i].path
-        state.counts[path, default: 0] += 1
-        let counts = LaunchCounts.format(state.counts)
-        let file = Paths.launchCounts()
-        do {
-            let parent = (file as NSString).deletingLastPathComponent
-            if !parent.isEmpty {
-                try FileManager.default.createDirectory(atPath: parent, withIntermediateDirectories: true)
-            }
-            try counts.write(toFile: file, atomically: true, encoding: .utf8)
-        } catch {
-            logErr("swhop: cannot save " + file + ": " + error.localizedDescription)
-        }
-
+        countLaunch(path)
         hide(false)
         NSWorkspace.shared.openApplication(
             at: URL(fileURLWithPath: path),
@@ -50,6 +38,22 @@ func choose() {
     case .quit:
         hide(false)
         quitAll()
+    }
+}
+
+/// Count one more launch of the app at `path` and save the counts.
+private func countLaunch(_ path: String) {
+    state.counts[path, default: 0] += 1
+
+    let file = Paths.launchCounts()
+    do {
+        try FileManager.default.createDirectory(
+            atPath: (file as NSString).deletingLastPathComponent,
+            withIntermediateDirectories: true
+        )
+        try LaunchCounts.format(state.counts).write(toFile: file, atomically: true, encoding: .utf8)
+    } catch {
+        logErr("swhop: cannot save " + file + ": " + error.localizedDescription)
     }
 }
 

@@ -108,7 +108,6 @@ func show() {
         panel.makeKeyAndOrderFront(nil)
         panel.makeFirstResponder(view)
         view.display()
-        panel.invalidateShadow()
     }
 }
 
@@ -130,8 +129,7 @@ func hide(_ refocus: Bool) {
     }
 }
 
-/// Redraw, and the shadow with it (it follows what is drawn).
+/// Redraw.
 func relayout() {
     ui?.view.display()
-    ui?.panel.invalidateShadow()
 }

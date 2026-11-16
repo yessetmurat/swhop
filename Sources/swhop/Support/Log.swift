@@ -9,5 +9,5 @@ import Foundation
 
 /// One line to stderr.
 func logErr(_ s: String) {
-    FileHandle.standardError.write((s + "\n").data(using: .utf8)!)
+    FileHandle.standardError.write(Data((s + "\n").utf8))
 }

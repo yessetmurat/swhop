@@ -16,7 +16,7 @@ public enum Calc {
     /// it has an operator or `%` (a bare number is not a calculation), and
     /// the result is finite.
     public static func eval(_ input: String) -> Double? {
-        let hasOp = { (s: String) in !s.filter({ "+-*/%".contains($0) }).isEmpty }
+        let hasOp = { (s: String) in s.contains { "+-*/%".contains($0) } }
         guard hasOp(input) else {
             return nil
         }
@@ -28,7 +28,7 @@ public enum Calc {
             return nil
         }
 
-        var p = Parser(chars: Array(s), i: 0)
+        var p = Parser(chars: Array(s))
         guard let v = p.expr() else {
             return nil
         }
@@ -48,7 +48,7 @@ public enum Calc {
         let chars: [Character]
         var i = 0
 
-        mutating func peek() -> Character? { chars.indices.contains(i) ? chars[i] : nil }
+        func peek() -> Character? { chars.indices.contains(i) ? chars[i] : nil }
 
         @discardableResult
         mutating func eat(_ c: Character) -> Bool {
