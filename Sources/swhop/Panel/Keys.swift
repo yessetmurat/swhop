@@ -14,26 +14,26 @@ import SwhopCore
 
 func key(_ event: NSEvent) {
     let mods = event.modifierFlags
-    let plain = event.charactersIgnoringModifiers ?? ""
     let ctrl = mods.contains(.control)
 
-    switch (event.keyCode, ctrl, plain) {
-    case (UInt16(kVK_Escape), _, _):
+    // Shortcuts go by key code, not by letter: they work in any layout.
+    switch (event.keyCode, ctrl) {
+    case (UInt16(kVK_Escape), _):
         return hide(true)
-    case (UInt16(kVK_Return), _, _), (UInt16(kVK_ANSI_KeypadEnter), _, _):
+    case (UInt16(kVK_Return), _), (UInt16(kVK_ANSI_KeypadEnter), _):
         return choose()
-    case (UInt16(kVK_UpArrow), _, _), (_, true, "k"):
+    case (UInt16(kVK_UpArrow), _), (UInt16(kVK_ANSI_K), true):
         step(-1)
-    case (UInt16(kVK_DownArrow), _, _), (_, true, "j"):
+    case (UInt16(kVK_DownArrow), _), (UInt16(kVK_ANSI_J), true):
         step(1)
-    case (UInt16(kVK_Delete), _, _):
+    case (UInt16(kVK_Delete), _):
         if mods.contains(.command) {
             state.query = ""
         } else if !state.query.isEmpty {
             state.query.removeLast()
         }
         state.selected = 0
-    case (UInt16(kVK_ANSI_V), _, _) where mods.contains(.command):
+    case (UInt16(kVK_ANSI_V), _) where mods.contains(.command):
         // cmd+V: append the clipboard, cleaned. Nothing pasted: no redraw.
         let pasted: String = NSPasteboard.general.string(forType: .string).map(pasteText) ?? ""
         if pasted.isEmpty {
